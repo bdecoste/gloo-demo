@@ -1,0 +1,20 @@
+data:
+  policy2.rego: |
+    package test
+
+    allow {
+        input.http_request.path == "/opa-pets/2"
+        any({input.http_request.method == "GET",
+            input.http_request.method == "DELETE"
+        })
+    }
+
+    allow {
+        input.http_request.path == "/opa-pets/3"
+        any({input.http_request.method == "GET",
+            input.http_request.method == "DELETE"
+        })
+    }
+metadata:
+  name: allow-get-users2
+  namespace: gloo-system

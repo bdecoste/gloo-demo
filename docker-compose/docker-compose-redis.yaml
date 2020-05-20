@@ -1,0 +1,8 @@
+version: '3'
+services:
+  redis:
+   image: docker.io/redis:5
+   environment:
+   - MASTER=true
+   ports:
+   - "6379:6379"

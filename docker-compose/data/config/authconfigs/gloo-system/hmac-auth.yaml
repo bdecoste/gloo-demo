@@ -1,0 +1,15 @@
+configs:
+- pluginAuth:
+    config:
+      MacHeaderName: x-test
+      RedisAddress: 10.128.0.56:6379
+    exportedSymbolName: Plugin
+    name: HmacAuth
+    pluginFileName: HmacAuth.so
+metadata:
+  name: hmac-auth
+  namespace: gloo-system
+  resourceVersion: "2"
+status:
+  reportedBy: gloo
+  state: Accepted

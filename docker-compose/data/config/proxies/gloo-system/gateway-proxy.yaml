@@ -1,0 +1,227 @@
+listeners:
+- bindAddress: '::'
+  bindPort: 8080
+  httpListener:
+    virtualHosts:
+    - domains:
+      - '*'
+      metadata:
+        sources:
+        - kind: '*v1.VirtualService'
+          name: default
+          namespace: gloo-system
+          observedGeneration: 0
+      name: gloo-system.default
+      options:
+        extauth:
+          configRef:
+            name: opa
+            namespace: gloo-system
+        jwt:
+          providers:
+            bogus:
+              issuer: http://bogus2.foo.com/auth/realms/solo
+              jwks:
+                remote:
+                  cacheDuration: 300s
+                  upstreamRef:
+                    name: keycloak
+                    namespace: gloo-system
+                  url: http://jwt.example.com/auth/realms/solo/protocol/openid-connect/certs
+            valid:
+              audiences:
+              - account
+              claimsToHeaders:
+              - claim: email
+                header: email-header1
+              - claim: sub
+                header: sub-header
+              - claim: aud
+                header: audience-header
+              issuer: http://34.82.251.0/auth/realms/solo
+              jwks:
+                remote:
+                  cacheDuration: 3000s
+                  upstreamRef:
+                    name: keycloak
+                    namespace: gloo-system
+                  url: http://jwt.example.com/auth/realms/solo/protocol/openid-connect/certs
+              keepToken: true
+      routes:
+      - matchers:
+        - exact: /accounts
+        metadata:
+          sources:
+          - kind: '*v1.VirtualService'
+            name: default
+            namespace: gloo-system
+            observedGeneration: 0
+        options:
+          extauth:
+            disable: false
+          jwt:
+            disable: true
+          prefixRewrite: /api/pets
+        routeAction:
+          single:
+            upstream:
+              name: petstore
+              namespace: gloo-system
+      - matchers:
+        - prefix: /jwt-pets
+        - prefix: /jwt-pet
+        - prefix: /jwt1-pet
+        metadata:
+          sources:
+          - kind: '*v1.VirtualService'
+            name: default
+            namespace: gloo-system
+            observedGeneration: 0
+        options:
+          dlp:
+            actions:
+            - customAction:
+                maskChar: X
+                name: cc
+                percent:
+                  value: 100
+                regex:
+                - (?!="name":"[\s]*)[^"]+(?=",)
+          extauth:
+            disable: true
+          prefixRewrite: /api/pets
+        routeAction:
+          single:
+            upstream:
+              name: petstore
+              namespace: gloo-system
+      - matchers:
+        - exact: /waf-pets
+        metadata:
+          sources:
+          - kind: '*v1.VirtualService'
+            name: default
+            namespace: gloo-system
+            observedGeneration: 0
+        options:
+          extauth:
+            disable: true
+          prefixRewrite: /api/pets
+          waf:
+            coreRuleSet:
+              customSettingsString: |
+                SecRuleEngine On
+                SecRequestBodyAccess On
+                SecDefaultAction "phase:1,log,auditlog,deny,status:403"
+                SecDefaultAction "phase:2,log,auditlog,deny,status:403"
+                SecAction "id:900230,phase:1,nolog,pass,t:none,setvar:'tx.allowed_http_versions=HTTP/2 HTTP/2.0'"
+                SecAction "id:900990,phase:1,nolog,pass,t:none,setvar:tx.crs_setup_version=310"
+                SecRule REMOTE_ADDR "@contains foo" "id:1,allow,phase:1"
+            customInterventionMessage: IP/Header ModSecurity intervention!
+        routeAction:
+          single:
+            upstream:
+              name: petstore
+              namespace: gloo-system
+      - matchers:
+        - exact: /xss
+        metadata:
+          sources:
+          - kind: '*v1.VirtualService'
+            name: default
+            namespace: gloo-system
+            observedGeneration: 0
+        options:
+          extauth:
+            disable: true
+          prefixRewrite: /api/pets
+          waf:
+            customInterventionMessage: XSS Security intervention!
+            ruleSets:
+            - ruleStr: SecRuleEngine On SecRequestBodyAccess On SecRule REQUEST_LINE|REQUEST_HEADERS|REQUEST_HEADERS_NAMES
+                "@contains <script>" "phase:1,id:'2100080',deny,log,auditlog"
+            - ruleStr: SecRuleEngine On SecRequestBodyAccess On SecRule REQUEST_BODY
+                "@contains <script>" "id:111,status:404,phase:2,deny,log,auditlog"
+        routeAction:
+          single:
+            upstream:
+              name: petstore
+              namespace: gloo-system
+      - matchers:
+        - prefix: /api
+        metadata:
+          sources:
+          - kind: '*v1.VirtualService'
+            name: default
+            namespace: gloo-system
+            observedGeneration: 0
+        options:
+          extauth:
+            disable: true
+          jwt:
+            disable: true
+        routeAction:
+          single:
+            upstream:
+              name: petstore
+              namespace: gloo-system
+      - matchers:
+        - prefix: /opa-pets
+        metadata:
+          sources:
+          - kind: '*v1.VirtualService'
+            name: default
+            namespace: gloo-system
+            observedGeneration: 0
+        options:
+          jwt:
+            disable: true
+          prefixRewrite: /api/pets
+        routeAction:
+          single:
+            upstream:
+              name: petstore
+              namespace: gloo-system
+      - matchers:
+        - prefix: /secure
+        metadata:
+          sources:
+          - kind: '*v1.VirtualService'
+            name: default
+            namespace: gloo-system
+            observedGeneration: 0
+        options:
+          prefixRewrite: /api/pets
+        routeAction:
+          single:
+            upstream:
+              name: petstore
+              namespace: gloo-system
+  metadata:
+    sources:
+    - kind: '*v1.Gateway'
+      name: gateway-proxy
+      namespace: gloo-system
+      observedGeneration: 0
+  name: listener-::-8080
+  useProxyProto: false
+- bindAddress: '::'
+  bindPort: 8443
+  httpListener: {}
+  metadata:
+    sources:
+    - kind: '*v1.Gateway'
+      name: gateway-proxy-ssl
+      namespace: gloo-system
+      observedGeneration: 0
+  name: listener-::-8443
+  useProxyProto: false
+metadata:
+  labels:
+    created_by: gateway
+  name: gateway-proxy
+  namespace: gloo-system
+  resourceVersion: "104"
+status:
+  reportedBy: gloo
+  state: Accepted

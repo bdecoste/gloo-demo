@@ -1,0 +1,11 @@
+metadata:
+  name: keycloak
+  namespace: gloo-system
+  resourceVersion: "6"
+static:
+  hosts:
+  - addr: 34.82.251.0
+    port: 80
+status:
+  reportedBy: gloo
+  state: Accepted

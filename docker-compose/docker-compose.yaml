@@ -1,0 +1,71 @@
+version: '3'
+services:
+  gloo:
+    image: quay.io/solo-io/gloo-ee:1.3.6
+    environment:
+    - START_STATS_SERVER=true
+    - GLOO_LICENSE_KEY=$KEY_HERE
+    working_dir: /
+    command:
+    - "--dir=/data/"
+    volumes:
+    - ./data:/data/
+    ports:
+    - "9977:9977"
+    - "9091:9091"
+    restart: always
+
+  gateway:
+    image: quay.io/solo-io/gateway:1.3.25
+    working_dir: /
+    environment:
+    - START_STATS_SERVER=true
+    command:
+    - "--dir=/data/"
+    volumes:
+    - ./data:/data/
+    restart: always
+    ports:
+    - "9093:9091"
+
+  gateway-proxy:
+    image: quay.io/solo-io/gloo-ee-envoy-wrapper:1.3.6
+    entrypoint: ["envoy"]
+    command: ["-c", "/config/envoy.yaml", "--disable-hot-restart"]
+    volumes:
+    - ./data/envoy-config.yaml:/config/envoy.yaml:ro
+    ports:
+    - "8080:8080"
+    - "8443:8443"
+    - "19000:19000"
+    restart: always
+
+  extauth:
+    image: quay.io/solo-io/extauth-ee:opa-ctx-fix
+    environment:
+    - SERVICE_NAME=ext-auth
+    - GLOO_ADDRESS=gloo:9977
+    - SERVER_PORT=8083
+    - GLOO_LICENSE_KEY=$KEY_HERE
+    - START_STATS_SERVER=true
+    ports:
+    - "8083:8083"
+    - "9092:9091"
+
+  ratelimit:
+   image: quay.io/solo-io/rate-limit-ee:1.3.6
+   environment:
+   - GLOO_ADDRESS=gloo:9977
+   - REDIS_URL=redis:6379
+   - REDIS_SOCKET_TYPE=tcp
+   - GLOO_LICENSE_KEY=$KEY_HERE
+   - START_STATS_SERVER=true
+   ports:
+   - "18081:18081"
+   - "9094:9091"
+
+  petstore: # example application, the swagger petstore
+    image: soloio/petstore-example:latest
+    ports: 
+    - "8090:8080"
+    restart: always

@@ -1,0 +1,12 @@
+data:
+  policy1.rego: |
+    package test
+
+    default allow = false
+    allow {
+        startswith(input.http_request.path, "/opa-pets/1")
+        input.http_request.method == "GET"
+    }
+metadata:
+  name: allow-get-users1
+  namespace: gloo-system

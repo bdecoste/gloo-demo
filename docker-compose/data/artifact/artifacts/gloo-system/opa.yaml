@@ -1,0 +1,17 @@
+data:
+  policy3.rego: |
+   package test
+   import input.http_request as http_request
+
+   request = {"method": "GET", "url": "http://postman-echo.com/get?foo1=bar1","tls_insecure_skip_verify": true, "timeout": "300s"}
+   response = http.send(request)
+
+   default allow = false
+   allow {
+     response.status_code == 200
+     trace( sprintf( "******* Status Code %d", [response.status_code] ) )
+     trace( sprintf( "******* Auth Header %s", [http_request.headers.authorization] ) )
+   }
+metadata:
+  name: opa
+  namespace: gloo-system
